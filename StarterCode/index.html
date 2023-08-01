@@ -22,7 +22,7 @@
       <div class="col-md-2">
         <div class="well">
           <h5>Test Subject ID No.:</h5>
-          <select id="selDataset" onchange="optionChanged(this.value)"></select>
+          <select id="selDataset" onchange="updateChart(this.value)"></select>
         </div>
         <div class="panel panel-primary">
           <div class="panel-heading">
@@ -32,24 +32,118 @@
         </div>
       </div>
       <div class="col-md-5">
-        <div id="bar"></div>
+        <div id="bar-chart"></div>
       </div>
       <div class="col-md-5">
-        <div id="gauge"></div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12">
-        <div id="bubble"></div>
+        <div id="bubble-chart"></div>
       </div>
     </div>
   </div>
 
-  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script src="./static/js/app.js"></script>
-  <script src="./static/js/bonus.js"></script>
-  
+  <script>
+    
+    const dataURL = "https://2u-data-curriculum-team.s3.amazonaws.com/dataviz-classroom/v1.1/14-Interactive-Web-Visualizations/02-Homework/samples.json";
+
+    
+    d3.json(dataURL).then((data) => {
+     
+      createDropdown(data.names);
+
+      
+      updateChart(data.names[0], data);
+    }).catch((error) => console.error("Error loading data:", error));
+
+    function createDropdown(names) {
+      const dropdown = document.getElementById("selDataset");
+
+      
+      names.forEach((name) => {
+        const option = document.createElement("option");
+        option.text = name;
+        option.value = name;
+        dropdown.appendChild(option);
+      });
+    }
+
+    function updateChart(selectedIndividual, data) {
+      
+      const sampleData = data.samples.find(sample => sample.id === selectedIndividual);
+
+    
+      createBarChart(sampleData);
+
+    
+      createBubbleChart(sampleData);
+
+      
+      updateSampleMetadata(selectedIndividual, data);
+    }
+
+    function createBarChart(data) {
+      const trace = {
+        x: data.sample_values.slice(0, 10).reverse(),
+        y: data.otu_ids.slice(0, 10).map(id => `OTU ${id}`).reverse(),
+        text: data.otu_labels.slice(0, 10).reverse(),
+        type: "bar",
+        orientation: "h",
+      };
+
+      const layout = {
+        title: "Top 10 OTUs",
+      };
+
+      Plotly.newPlot("bar-chart", [trace], layout);
+    }
+
+    function createBubbleChart(data) {
+      const trace = {
+        x: data.otu_ids,
+        y: data.sample_values,
+        mode: 'markers',
+        marker: {
+          size: data.sample_values,
+          color: data.otu_ids,
+          colorscale: 'Earth',
+        },
+        text: data.otu_labels,
+      };
+
+      const layout = {
+        title: 'Bubble Chart',
+        xaxis: { title: 'OTU IDs' },
+        yaxis: { title: 'Sample Values' },
+      };
+
+      Plotly.newPlot('bubble-chart', [trace], layout);
+    }
+
+    function updateSampleMetadata(selectedIndividual, data) {
+      
+      const metadata = data.metadata.find(item => item.id === parseInt(selectedIndividual));
+
+   
+      const metadataDiv = document.getElementById("sample-metadata");
+      metadataDiv.innerHTML = "";
+
+     
+      for (const [key, value] of Object.entries(metadata)) {
+        const paragraph = document.createElement("p");
+        paragraph.innerHTML = `<strong>${key}: </strong>${value}`;
+        metadataDiv.appendChild(paragraph);
+      }
+    }
+
+  </script>
+
 </body>
 
 </html>
+
+
+
+
+
+
+
